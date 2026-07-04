@@ -11,7 +11,8 @@ from pydantic import BaseModel
 class AppointmentRequest(BaseModel):
     patient_name: str
     reason: str
-    start_time: dt.datetime
+    appointment_date: str
+    appointment_time: str
 
 
 class AppointmentResponse(BaseModel):
@@ -42,11 +43,57 @@ app = FastAPI()
 
 # Schedule Appointments
 @app.post("/schedule_appointment/")
-def schedule_appointment(request: AppointmentRequest, db: Session = Depends(get_db)):
+def schedule_appointment(
+    request: AppointmentRequest,
+    db: Session = Depends(get_db)
+):
+    # Parse date
+    appointment_date = request.appointment_date.lower()
+
+    today = dt.date.today()
+
+    if appointment_date == "today":
+        actual_date = today
+
+    elif appointment_date == "tomorrow":
+        actual_date = today + dt.timedelta(days=1)
+
+    else:
+        actual_date = dt.datetime.strptime(
+            request.appointment_date,
+            "%Y-%m-%d"
+        ).date()
+
+    # Parse time
+    appointment_time = dt.datetime.strptime(
+        request.appointment_time,
+        "%I %p"
+    ).time()
+
+    # Combine date and time
+    start_datetime = dt.datetime.combine(
+        actual_date,
+        appointment_time
+    )
+
+    # Save appointment
     new_appointment = Appointment(
-            patient_name=request.patient_name,
-            reason=request.reason,
-            start_time=request.start_time,
+        patient_name=request.patient_name,
+        reason=request.reason,
+        start_time=start_datetime,
+    )
+
+    db.add(new_appointment)
+    db.commit()
+    db.refresh(new_appointment)
+
+    return AppointmentResponse(
+        id=new_appointment.id,
+        patient_name=new_appointment.patient_name,
+        reason=new_appointment.reason,
+        start_time=new_appointment.start_time,
+        canceled=new_appointment.canceled,
+        created_at=new_appointment.created_at,
     )
     db.add(new_appointment)
     db.commit()
