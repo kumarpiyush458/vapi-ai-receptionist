@@ -1,33 +1,50 @@
+import os
 import datetime as dt
 
 from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
-DATABASE_URL = "sqlite:///./appointments_db.db"
+# Use Railway PostgreSQL if available, otherwise use SQLite locally
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./appointments_db.db")
 
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+# Railway uses postgres://, SQLAlchemy expects postgresql://
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
+# SQLite needs check_same_thread, PostgreSQL does not
+if DATABASE_URL.startswith("sqlite"):
+    engine = create_engine(
+        DATABASE_URL,
+        connect_args={"check_same_thread": False}
+    )
+else:
+    engine = create_engine(DATABASE_URL)
+
+SessionLocal = sessionmaker(
+    autocommit=False,
+    autoflush=False,
+    bind=engine
+)
 
 Base = declarative_base()
 
 
 class Appointment(Base):
     __tablename__ = "appointments"
-    id = Column(Integer, primary_key=True, index= True)
+
+    id = Column(Integer, primary_key=True, index=True)
     patient_name = Column(String, index=True)
-    reason = Column(String,nullable=True)
+    reason = Column(String, nullable=True)
     start_time = Column(DateTime, index=True)
     canceled = Column(Boolean, default=False)
     created_at = Column(DateTime, default=dt.datetime.utcnow)
-    
-   
-   
-   
+
+
 def init_db():
     print("Creating tables...")
     Base.metadata.create_all(bind=engine)
     print("Done!")
+
 
 def get_db():
     db: Session = SessionLocal()
@@ -39,4 +56,3 @@ def get_db():
 
 if __name__ == "__main__":
     init_db()
-
