@@ -29,6 +29,7 @@ class CancelAppointmentRequest(BaseModel):
 
 
 class CancelAppointmentResponse(BaseModel):
+    patient_name: str
     canceled_count: int
 
 class ListAppointmentRequest(BaseModel):
@@ -142,6 +143,7 @@ def cancel_appointment(
     db.commit()
 
     return CancelAppointmentResponse(
+        patient_name=request.patient_name,
         canceled_count=len(appointments)
     )
 
