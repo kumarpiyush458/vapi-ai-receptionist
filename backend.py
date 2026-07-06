@@ -10,6 +10,7 @@ from pydantic import BaseModel
 
 class AppointmentRequest(BaseModel):
     patient_name: str
+    doctor: str
     reason: str
     appointment_date: str
     appointment_time: str
@@ -18,6 +19,7 @@ class AppointmentRequest(BaseModel):
 class AppointmentResponse(BaseModel):
     id: int
     patient_name: str
+    doctor: str
     reason: str
     start_time: dt.datetime
     canceled: bool
@@ -80,6 +82,7 @@ def schedule_appointment(
     # Save appointment
     new_appointment = Appointment(
         patient_name=request.patient_name,
+        doctor=request.doctor,
         reason=request.reason,
         start_time=start_datetime,
     )
@@ -91,6 +94,7 @@ def schedule_appointment(
     return AppointmentResponse(
         id=new_appointment.id,
         patient_name=new_appointment.patient_name,
+        doctor=new_appointment.doctor,
         reason=new_appointment.reason,
         start_time=new_appointment.start_time,
         canceled=new_appointment.canceled,

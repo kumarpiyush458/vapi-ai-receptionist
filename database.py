@@ -34,9 +34,15 @@ class Appointment(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     patient_name = Column(String, index=True)
+
     reason = Column(String, nullable=True)
+
+    doctor = Column(String, nullable=True)   # NEW
+
     start_time = Column(DateTime, index=True)
+
     canceled = Column(Boolean, default=False)
+
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 
