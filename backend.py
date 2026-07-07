@@ -1,7 +1,7 @@
 # Step 1: Import Database Objects
 
 from database import init_db, Appointment, Doctor, Patient, get_db
-
+from sqlalchemy.orm import Session
 init_db()
 
 # step 3: Create Data Contracts using Pydantic models
@@ -94,6 +94,44 @@ def parse_natural_date(date_text: str):
             "%Y-%m-%d"
         ).date()
 
+def get_next_slot(current_time: dt.datetime):
+    return current_time + dt.timedelta(minutes=30)
+
+
+def is_slot_available(
+    doctor: str,
+    slot: dt.datetime,
+    db: Session
+):
+    existing = (
+        db.query(Appointment)
+        .filter(
+            Appointment.doctor == doctor,
+            Appointment.start_time == slot,
+            Appointment.canceled == False
+        )
+        .first()
+    )
+
+    return existing is None
+
+
+def find_next_available_slot(
+    doctor: str,
+    requested_slot: dt.datetime,
+    db: Session
+):
+    current_slot = requested_slot
+
+    while not is_slot_available(
+        doctor,
+        current_slot,
+        db
+    ):
+        current_slot = get_next_slot(current_slot)
+
+    return current_slot
+
 def parse_natural_time(time_text: str):
 
     try:
@@ -145,7 +183,7 @@ def recommend_doctor(reason: str, db: Session):
 # Step 2: Create FastAPI application and endpoints pseudoo code
 
 from fastapi import FastAPI, HTTPException, Depends
-from sqlalchemy.orm import Session
+
 
 app = FastAPI()
 
@@ -167,6 +205,33 @@ def schedule_appointment(
         actual_date,
         appointment_time
     )
+
+    existing_appointment = (
+        db.query(Appointment)
+        .filter(
+            Appointment.doctor == request.doctor,
+            Appointment.start_time == start_datetime,
+            Appointment.canceled == False
+        )
+        .first()
+    )
+
+    if existing_appointment:
+
+        suggested_slot = find_next_available_slot(
+            request.doctor,
+            start_datetime,
+            db
+        )
+
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "message": "Requested slot is already booked.",
+                "suggested_date": suggested_slot.strftime("%Y-%m-%d"),
+                "suggested_time": suggested_slot.strftime("%I:%M %p")
+            }
+        )
 
     # Save appointment
     new_appointment = Appointment(
