@@ -1,6 +1,6 @@
 # Step 1: Import Database Objects
 
-from database import init_db, Appointment, get_db
+from database import init_db, Appointment, Doctor, Patient, get_db
 
 init_db()
 
@@ -37,6 +37,66 @@ class CancelAppointmentResponse(BaseModel):
 class ListAppointmentRequest(BaseModel):
     date: dt.date
 
+class RecommendDoctorRequest(BaseModel):
+    symptoms: str
+
+class RecommendDoctorResponse(BaseModel):
+    department: str
+    doctor_name: str
+    experience: int
+
+SYMPTOM_TO_DEPARTMENT = {
+    "fever": "General Medicine",
+    "cold": "ENT",
+    "cough": "General Medicine",
+    "sore throat": "ENT",
+    "ear pain": "ENT",
+    "skin rash": "Dermatology",
+    "acne": "Dermatology",
+    "back pain": "Orthopedics",
+    "joint pain": "Orthopedics",
+    "chest pain": "Cardiology",
+    "heart pain": "Cardiology",
+    "headache": "Neurology",
+    "migraine": "Neurology",
+    "child fever": "Pediatrics",
+    "pregnancy": "Gynecology"
+}
+
+def find_patient_by_phone(phone_number: str, db: Session):
+
+    patient = (
+        db.query(Patient)
+        .filter(Patient.phone_number == phone_number)
+        .first()
+    )
+
+    return patient
+
+def recommend_doctor(reason: str, db: Session):
+    reason = reason.lower()
+
+    department = None
+
+    for symptom, dept in SYMPTOM_TO_DEPARTMENT.items():
+        if symptom in reason:
+            department = dept
+            break
+
+    if not department:
+        return None
+
+    doctor = (
+        db.query(Doctor)
+        .filter(
+            Doctor.department == department,
+            Doctor.available == True
+        )
+        .order_by(Doctor.experience.desc())
+        .first()
+    )
+
+    return doctor
 # Step 2: Create FastAPI application and endpoints pseudoo code
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -100,18 +160,7 @@ def schedule_appointment(
         canceled=new_appointment.canceled,
         created_at=new_appointment.created_at,
     )
-    db.add(new_appointment)
-    db.commit()
-    db.refresh(new_appointment)
-    new_appointment_return_obj = AppointmentResponse(
-    id=new_appointment.id,
-    patient_name=new_appointment.patient_name,
-    reason=new_appointment.reason,
-    start_time=new_appointment.start_time,
-    canceled=new_appointment.canceled,
-    created_at=new_appointment.created_at,
-    )
-    return new_appointment_return_obj
+    
 
 # Cancel Appointments
 from sqlalchemy import select
@@ -178,6 +227,7 @@ def list_appointments(
         appointment_obj = AppointmentResponse(
             id=appointment.id,
             patient_name=appointment.patient_name,
+            doctor=appointment.doctor,
             reason=appointment.reason,
             start_time=appointment.start_time,
             canceled=appointment.canceled,
@@ -187,6 +237,48 @@ def list_appointments(
         booked_appointments.append(appointment_obj)
 
     return booked_appointments
+
+# Recommend doctors
+@app.post("/recommend_doctor/")
+def recommend_doctor_endpoint(
+    request: RecommendDoctorRequest,
+    db: Session = Depends(get_db)
+):
+    doctor = recommend_doctor(
+        request.symptoms,
+         db
+    )
+
+    if doctor is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No suitable doctor found for these symptoms."
+        )
+    
+    return RecommendDoctorResponse(
+        department=doctor.department,
+        doctor_name=doctor.doctor_name,
+        experience=doctor.experience
+    )
+
+# Find Patient by Phone number
+@app.get("/find_patient/{phone_number}")
+def find_patient(phone_number: str, db: Session = Depends(get_db)):
+
+    patient = find_patient_by_phone(phone_number, db)
+
+    if patient is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Patient not found"
+        )
+
+    return {
+        "id": patient.id,
+        "name": patient.name,
+        "age": patient.age,
+        "phone_number": patient.phone_number
+    }
 
 import uvicorn
 if __name__ == "__main__":
