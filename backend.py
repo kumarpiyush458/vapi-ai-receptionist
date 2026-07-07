@@ -76,6 +76,38 @@ SYMPTOM_TO_DEPARTMENT = {
     "pregnancy": "Gynecology"
 }
 
+def parse_natural_date(date_text: str):
+
+    date_text = date_text.lower()
+
+    today = dt.date.today()
+
+    if date_text == "today":
+        return today
+
+    elif date_text == "tomorrow":
+        return today + dt.timedelta(days=1)
+
+    else:
+        return dt.datetime.strptime(
+            date_text,
+            "%Y-%m-%d"
+        ).date()
+
+def parse_natural_time(time_text: str):
+
+    try:
+        return dt.datetime.strptime(
+            time_text,
+            "%I %p"
+        ).time()
+
+    except ValueError:
+        return dt.datetime.strptime(
+            time_text,
+            "%I:%M %p"
+        ).time()
+
 def find_patient_by_phone(phone_number: str, db: Session):
 
     patient = (
@@ -123,28 +155,12 @@ def schedule_appointment(
     request: AppointmentRequest,
     db: Session = Depends(get_db)
 ):
-    # Parse date
-    appointment_date = request.appointment_date.lower()
+   # Parse date
+    actual_date = parse_natural_date(request.appointment_date)
 
-    today = dt.date.today()
+# Parse time
+    appointment_time = parse_natural_time(request.appointment_time)
 
-    if appointment_date == "today":
-        actual_date = today
-
-    elif appointment_date == "tomorrow":
-        actual_date = today + dt.timedelta(days=1)
-
-    else:
-        actual_date = dt.datetime.strptime(
-            request.appointment_date,
-            "%Y-%m-%d"
-        ).date()
-
-    # Parse time
-    appointment_time = dt.datetime.strptime(
-        request.appointment_time,
-        "%I %p"
-    ).time()
 
     # Combine date and time
     start_datetime = dt.datetime.combine(
@@ -303,24 +319,9 @@ def reschedule_appointment(
             detail="No appointment found for the given details."
         )
 
-    today = dt.date.today()
+    actual_date = parse_natural_date(request.new_date)
 
-    if request.new_date.lower() == "today":
-        actual_date = today
-
-    elif request.new_date.lower() == "tomorrow":
-        actual_date = today + dt.timedelta(days=1)
-
-    else:
-        actual_date = dt.datetime.strptime(
-            request.new_date,
-            "%Y-%m-%d"
-        ).date()
-
-    appointment_time = dt.datetime.strptime(
-        request.new_time,
-        "%I %p"
-    ).time()
+    appointment_time = parse_natural_time(request.new_time)
 
     new_start_datetime = dt.datetime.combine(
         actual_date,
