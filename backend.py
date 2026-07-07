@@ -40,6 +40,19 @@ class ListAppointmentRequest(BaseModel):
 class RecommendDoctorRequest(BaseModel):
     symptoms: str
 
+class RescheduleAppointmentRequest(BaseModel):
+    patient_name: str
+    old_date: dt.date
+    new_date: str
+    new_time: str
+
+
+class RescheduleAppointmentResponse(BaseModel):
+    patient_name: str
+    new_start_time: dt.datetime
+
+
+
 class RecommendDoctorResponse(BaseModel):
     department: str
     doctor_name: str
@@ -259,6 +272,68 @@ def recommend_doctor_endpoint(
         department=doctor.department,
         doctor_name=doctor.doctor_name,
         experience=doctor.experience
+    )
+
+# Reschedule Appointment
+@app.post("/reschedule_appointment/")
+def reschedule_appointment(
+    request: RescheduleAppointmentRequest,
+    db: Session = Depends(get_db)
+):
+    start_dt = dt.datetime.combine(
+        request.old_date,
+        dt.time.min
+    )
+
+    end_dt = start_dt + dt.timedelta(days=1)
+
+    result = db.execute(
+        select(Appointment)
+        .where(Appointment.patient_name == request.patient_name)
+        .where(Appointment.start_time >= start_dt)
+        .where(Appointment.start_time < end_dt)
+        .where(Appointment.canceled == False)
+    )
+
+    appointment = result.scalars().first()
+
+    if appointment is None:
+        raise HTTPException(
+            status_code=404,
+            detail="No appointment found for the given details."
+        )
+
+    today = dt.date.today()
+
+    if request.new_date.lower() == "today":
+        actual_date = today
+
+    elif request.new_date.lower() == "tomorrow":
+        actual_date = today + dt.timedelta(days=1)
+
+    else:
+        actual_date = dt.datetime.strptime(
+            request.new_date,
+            "%Y-%m-%d"
+        ).date()
+
+    appointment_time = dt.datetime.strptime(
+        request.new_time,
+        "%I %p"
+    ).time()
+
+    new_start_datetime = dt.datetime.combine(
+        actual_date,
+        appointment_time
+    )
+    appointment.start_time = new_start_datetime
+
+    db.commit()
+    db.refresh(appointment)
+
+    return RescheduleAppointmentResponse(
+        patient_name=appointment.patient_name,
+        new_start_time=appointment.start_time
     )
 
 # Find Patient by Phone number
