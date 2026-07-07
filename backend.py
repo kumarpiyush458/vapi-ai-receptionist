@@ -42,7 +42,7 @@ class RecommendDoctorRequest(BaseModel):
 
 class RescheduleAppointmentRequest(BaseModel):
     patient_name: str
-    old_date: dt.date
+    old_date: str
     new_date: str
     new_time: str
 
@@ -296,8 +296,10 @@ def reschedule_appointment(
     request: RescheduleAppointmentRequest,
     db: Session = Depends(get_db)
 ):
+    old_date = parse_natural_date(request.old_date)
+
     start_dt = dt.datetime.combine(
-        request.old_date,
+        old_date,
         dt.time.min
     )
 
