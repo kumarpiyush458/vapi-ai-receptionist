@@ -1,3 +1,4 @@
+from logger import logger
 import datetime as dt
 
 from fastapi import HTTPException
@@ -77,18 +78,32 @@ def schedule_appointment_service(
     db.add(new_appointment)
     db.commit()
     db.refresh(new_appointment)
-
-    google_event = create_calendar_event(
-        patient_name=new_appointment.patient_name,
-        doctor=new_appointment.doctor,
-        reason=new_appointment.reason,
-        start_datetime=new_appointment.start_time
+    logger.info(
+        f"Appointment created successfully for {new_appointment.patient_name} with {new_appointment.doctor}"
     )
 
-    new_appointment.google_event_id = google_event["id"]
+    try:
+        google_event = create_calendar_event(
+            patient_name=new_appointment.patient_name,
+            doctor=new_appointment.doctor,
+            reason=new_appointment.reason,
+            start_datetime=new_appointment.start_time
+        )
 
-    db.commit()
-    db.refresh(new_appointment)
+        new_appointment.google_event_id = google_event["id"]
+
+        db.commit()
+        db.refresh(new_appointment)
+
+    except Exception:
+        logger.exception(
+            f"Failed to sync Google Calendar for appointment ID {new_appointment.id}"
+        )
+
+        raise HTTPException(
+            status_code=500,
+            detail="Appointment was created, but Google Calendar synchronization failed."
+        )
 
     return AppointmentResponse(
         id=new_appointment.id,

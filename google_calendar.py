@@ -1,6 +1,6 @@
-
-
 from __future__ import print_function
+from logger import logger
+
 
 import datetime as dt
 import os.path
@@ -64,7 +64,9 @@ def create_calendar_event(
 ):
     service = authenticate_google_calendar()
 
-    end_datetime = start_datetime + dt.timedelta(minutes=30)
+    end_datetime = start_datetime + dt.timedelta(
+        minutes=APPOINTMENT_DURATION_MINUTES
+    )
 
     event = {
         "summary": f"Appointment - {patient_name}",
@@ -74,20 +76,31 @@ def create_calendar_event(
         ),
         "start": {
             "dateTime": start_datetime.isoformat(),
-            "timeZone": "Asia/Kolkata",
+            "timeZone": GOOGLE_TIMEZONE,
         },
         "end": {
             "dateTime": end_datetime.isoformat(),
-            "timeZone": "Asia/Kolkata",
+            "timeZone": GOOGLE_TIMEZONE,
         },
     }
 
-    event = service.events().insert(
-        calendarId="primary",
-        body=event
-    ).execute()
+    try:
+        event = service.events().insert(
+            calendarId="primary",
+            body=event
+        ).execute()
 
-    return event
+        logger.info(
+            f"Google Calendar event created successfully. Event ID: {event['id']}"
+        )
+
+        return event
+
+    except Exception:
+        logger.exception(
+            f"Failed to create Google Calendar event for patient {patient_name}"
+        )
+        raise
 
 
 #delete calender event
