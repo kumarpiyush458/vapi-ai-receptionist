@@ -9,3 +9,5 @@ wheels/
 # Virtual environments
 .venv
 appointments_db.db
+client_secret.json
+token.json

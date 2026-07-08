@@ -1,185 +1,48 @@
 # Step 1: Import Database Objects
+from services.doctor_service import (
+    recommend_doctor,
+    find_patient_by_phone,
+)
 
+from schemas import (
+    AppointmentRequest,
+    AppointmentResponse,
+    CancelAppointmentRequest,
+    CancelAppointmentResponse,
+    ListAppointmentRequest,
+    RecommendDoctorRequest,
+    RecommendDoctorResponse,
+    RescheduleAppointmentRequest,
+    RescheduleAppointmentResponse,
+)
+
+from utils import (
+    parse_natural_date,
+    parse_natural_time,
+    get_next_slot,
+    is_slot_available,
+    find_next_available_slot,
+)
+
+from google_calendar import (
+    create_calendar_event,
+    delete_calendar_event,
+    update_calendar_event
+)
 from database import init_db, Appointment, Doctor, Patient, get_db
 from sqlalchemy.orm import Session
 init_db()
 
+from services.appointment_service import (
+    schedule_appointment_service,
+    cancel_appointment_service,
+)
+
+
 # step 3: Create Data Contracts using Pydantic models
 import datetime as dt 
-from pydantic import BaseModel
-
-class AppointmentRequest(BaseModel):
-    patient_name: str
-    doctor: str
-    reason: str
-    appointment_date: str
-    appointment_time: str
 
 
-class AppointmentResponse(BaseModel):
-    id: int
-    patient_name: str
-    doctor: str
-    reason: str
-    start_time: dt.datetime
-    canceled: bool
-    created_at: dt.datetime
-
-class CancelAppointmentRequest(BaseModel):
-    patient_name: str
-    date: dt.date
-
-
-class CancelAppointmentResponse(BaseModel):
-    patient_name: str
-    canceled_count: int
-
-class ListAppointmentRequest(BaseModel):
-    date: dt.date
-
-class RecommendDoctorRequest(BaseModel):
-    symptoms: str
-
-class RescheduleAppointmentRequest(BaseModel):
-    patient_name: str
-    old_date: str
-    new_date: str
-    new_time: str
-
-
-class RescheduleAppointmentResponse(BaseModel):
-    patient_name: str
-    new_start_time: dt.datetime
-
-
-
-class RecommendDoctorResponse(BaseModel):
-    department: str
-    doctor_name: str
-    experience: int
-
-SYMPTOM_TO_DEPARTMENT = {
-    "fever": "General Medicine",
-    "cold": "ENT",
-    "cough": "General Medicine",
-    "sore throat": "ENT",
-    "ear pain": "ENT",
-    "skin rash": "Dermatology",
-    "acne": "Dermatology",
-    "back pain": "Orthopedics",
-    "joint pain": "Orthopedics",
-    "chest pain": "Cardiology",
-    "heart pain": "Cardiology",
-    "headache": "Neurology",
-    "migraine": "Neurology",
-    "child fever": "Pediatrics",
-    "pregnancy": "Gynecology"
-}
-
-def parse_natural_date(date_text: str):
-
-    date_text = date_text.lower()
-
-    today = dt.date.today()
-
-    if date_text == "today":
-        return today
-
-    elif date_text == "tomorrow":
-        return today + dt.timedelta(days=1)
-
-    else:
-        return dt.datetime.strptime(
-            date_text,
-            "%Y-%m-%d"
-        ).date()
-
-def get_next_slot(current_time: dt.datetime):
-    return current_time + dt.timedelta(minutes=30)
-
-
-def is_slot_available(
-    doctor: str,
-    slot: dt.datetime,
-    db: Session
-):
-    existing = (
-        db.query(Appointment)
-        .filter(
-            Appointment.doctor == doctor,
-            Appointment.start_time == slot,
-            Appointment.canceled == False
-        )
-        .first()
-    )
-
-    return existing is None
-
-
-def find_next_available_slot(
-    doctor: str,
-    requested_slot: dt.datetime,
-    db: Session
-):
-    current_slot = requested_slot
-
-    while not is_slot_available(
-        doctor,
-        current_slot,
-        db
-    ):
-        current_slot = get_next_slot(current_slot)
-
-    return current_slot
-
-def parse_natural_time(time_text: str):
-
-    try:
-        return dt.datetime.strptime(
-            time_text,
-            "%I %p"
-        ).time()
-
-    except ValueError:
-        return dt.datetime.strptime(
-            time_text,
-            "%I:%M %p"
-        ).time()
-
-def find_patient_by_phone(phone_number: str, db: Session):
-
-    patient = (
-        db.query(Patient)
-        .filter(Patient.phone_number == phone_number)
-        .first()
-    )
-
-    return patient
-
-def recommend_doctor(reason: str, db: Session):
-    reason = reason.lower()
-
-    department = None
-
-    for symptom, dept in SYMPTOM_TO_DEPARTMENT.items():
-        if symptom in reason:
-            department = dept
-            break
-
-    if not department:
-        return None
-
-    doctor = (
-        db.query(Doctor)
-        .filter(
-            Doctor.department == department,
-            Doctor.available == True
-        )
-        .order_by(Doctor.experience.desc())
-        .first()
-    )
-
-    return doctor
 # Step 2: Create FastAPI application and endpoints pseudoo code
 
 from fastapi import FastAPI, HTTPException, Depends
@@ -193,68 +56,10 @@ def schedule_appointment(
     request: AppointmentRequest,
     db: Session = Depends(get_db)
 ):
-   # Parse date
-    actual_date = parse_natural_date(request.appointment_date)
-
-# Parse time
-    appointment_time = parse_natural_time(request.appointment_time)
-
-
-    # Combine date and time
-    start_datetime = dt.datetime.combine(
-        actual_date,
-        appointment_time
+    return schedule_appointment_service(
+        request,
+        db
     )
-
-    existing_appointment = (
-        db.query(Appointment)
-        .filter(
-            Appointment.doctor == request.doctor,
-            Appointment.start_time == start_datetime,
-            Appointment.canceled == False
-        )
-        .first()
-    )
-
-    if existing_appointment:
-
-        suggested_slot = find_next_available_slot(
-            request.doctor,
-            start_datetime,
-            db
-        )
-
-        raise HTTPException(
-            status_code=409,
-            detail={
-                "message": "Requested slot is already booked.",
-                "suggested_date": suggested_slot.strftime("%Y-%m-%d"),
-                "suggested_time": suggested_slot.strftime("%I:%M %p")
-            }
-        )
-
-    # Save appointment
-    new_appointment = Appointment(
-        patient_name=request.patient_name,
-        doctor=request.doctor,
-        reason=request.reason,
-        start_time=start_datetime,
-    )
-
-    db.add(new_appointment)
-    db.commit()
-    db.refresh(new_appointment)
-
-    return AppointmentResponse(
-        id=new_appointment.id,
-        patient_name=new_appointment.patient_name,
-        doctor=new_appointment.doctor,
-        reason=new_appointment.reason,
-        start_time=new_appointment.start_time,
-        canceled=new_appointment.canceled,
-        created_at=new_appointment.created_at,
-    )
-    
 
 # Cancel Appointments
 from sqlalchemy import select
@@ -264,36 +69,10 @@ def cancel_appointment(
     request: CancelAppointmentRequest,
     db: Session = Depends(get_db)
 ):
-
-    start_dt = dt.datetime.combine(request.date, dt.time.min)
-    end_dt = start_dt + dt.timedelta(days=1)
-
-    result = db.execute(
-        select(Appointment)
-        .where(Appointment.patient_name == request.patient_name)
-        .where(Appointment.start_time >= start_dt)
-        .where(Appointment.start_time < end_dt)
-        .where(Appointment.canceled == False)
+    return cancel_appointment_service(
+        request,
+        db
     )
-
-    appointments = result.scalars().all()
-
-    if not appointments:
-        raise HTTPException(
-            status_code=404,
-            detail="No matching appointment for the details found in our system"
-        )
-
-    for appointment in appointments:
-        appointment.canceled = True
-
-    db.commit()
-
-    return CancelAppointmentResponse(
-        patient_name=request.patient_name,
-        canceled_count=len(appointments)
-    )
-
 
 # List Appointment
 @app.post("/list_appointments/")
@@ -395,6 +174,16 @@ def reschedule_appointment(
         appointment_time
     )
     appointment.start_time = new_start_datetime
+
+    if appointment.google_event_id:
+        update_calendar_event(
+            event_id=appointment.google_event_id,
+            patient_name=appointment.patient_name,
+            doctor=appointment.doctor,
+            reason=appointment.reason,
+            start_datetime=appointment.start_time
+        )
+
 
     db.commit()
     db.refresh(appointment)

@@ -43,6 +43,8 @@ class Appointment(Base):
 
     canceled = Column(Boolean, default=False)
 
+    google_event_id = Column(String, nullable=True)
+
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 class Doctor(Base):
