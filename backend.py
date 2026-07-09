@@ -24,7 +24,7 @@ from utils import (
     find_next_available_slot,
 )
 
-from google_calendar import (
+from integrations.calendar import (
     create_calendar_event,
     delete_calendar_event,
     update_calendar_event

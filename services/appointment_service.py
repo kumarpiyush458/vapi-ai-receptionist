@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 
 from database import Appointment
-from google_calendar import (
+from integrations.calendar import (
     create_calendar_event,
     update_calendar_event,
     delete_calendar_event,

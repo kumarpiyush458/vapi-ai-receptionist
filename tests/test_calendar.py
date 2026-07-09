@@ -1,4 +1,4 @@
-from google_calendar import authenticate_google_calendar
+from integrations.calendar import authenticate_google_calendar
 
 service = authenticate_google_calendar()
 

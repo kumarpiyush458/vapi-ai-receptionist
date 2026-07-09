@@ -1,6 +1,6 @@
 import datetime as dt
 
-from google_calendar import create_calendar_event
+from integrations.calendar import create_calendar_event
 
 create_calendar_event(
     patient_name="Piyush Kumar",
