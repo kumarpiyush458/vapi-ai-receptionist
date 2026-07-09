@@ -5,7 +5,10 @@ from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # Use Railway PostgreSQL if available, otherwise use SQLite locally
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./appointments_db.db")
+DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://vapi:vapi123@localhost:5432/vapi_db"
+    )
 
 # Railway uses postgres://, SQLAlchemy expects postgresql://
 if DATABASE_URL.startswith("postgres://"):

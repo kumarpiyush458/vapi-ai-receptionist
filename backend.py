@@ -31,7 +31,7 @@ from google_calendar import (
 )
 from database import init_db, Appointment, Doctor, Patient, get_db
 from sqlalchemy.orm import Session
-init_db()
+# init_db()
 
 from services.appointment_service import (
     schedule_appointment_service,

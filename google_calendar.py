@@ -19,6 +19,15 @@ from googleapiclient.discovery import build
 # authentication of google calender
 
 def authenticate_google_calendar():
+    # Railway: recreate credential files from environment variables
+    if os.getenv("GOOGLE_CLIENT_SECRET_JSON"):
+        with open("client_secret.json", "w") as f:
+            f.write(os.environ["GOOGLE_CLIENT_SECRET_JSON"])
+
+    if os.getenv("GOOGLE_TOKEN_JSON"):
+        with open("token.json", "w") as f:
+            f.write(os.environ["GOOGLE_TOKEN_JSON"])
+            
     creds = None
 
     if os.path.exists("token.json"):
