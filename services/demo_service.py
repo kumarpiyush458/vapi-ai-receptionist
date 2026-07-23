@@ -36,3 +36,6 @@ def create_demo_request_service(
     db.refresh(demo_request)
 
     return demo_request
+
+def get_demo_requests_service(db: Session):
+    return db.query(DemoRequest).all()

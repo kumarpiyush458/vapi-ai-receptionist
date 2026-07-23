@@ -42,6 +42,7 @@ from services.appointment_service import (
 
 from services.demo_service import (
     create_demo_request_service,
+    get_demo_requests_service,
 )
 
 
@@ -244,6 +245,15 @@ def create_demo_request(
         request,
         db,
     )
+
+@app.get(
+    "/demo-requests/",
+    response_model=list[DemoRequestResponse],
+)
+def get_demo_requests(
+    db: Session = Depends(get_db),
+):
+    return get_demo_requests_service(db)
 
 import uvicorn
 if __name__ == "__main__":
