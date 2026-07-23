@@ -59,8 +59,6 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
         "https://sturdy-dollop-4qqq6q6pr5j6c5g9x-3000.app.github.dev",
     ],
     allow_credentials=True,
