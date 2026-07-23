@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     Integer,
     String,
+    Text,
 )
 
 from database import Base
@@ -54,3 +55,20 @@ class Patient(Base):
     age = Column(Integer)
 
     phone_number = Column(String, unique=True, nullable=False)
+
+class DemoRequest(Base):
+    __tablename__ = "demo_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    full_name = Column(String, nullable=False)
+
+    email = Column(String, nullable=False)
+
+    organization_name = Column(String, nullable=False)
+
+    phone = Column(String, nullable=False)
+
+    message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=dt.datetime.utcnow)

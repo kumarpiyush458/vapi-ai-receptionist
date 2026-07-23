@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 import datetime as dt 
 
 class AppointmentRequest(BaseModel):
@@ -50,3 +50,24 @@ class RecommendDoctorResponse(BaseModel):
     department: str
     doctor_name: str
     experience: int
+
+class DemoRequestCreate(BaseModel):
+    full_name: str
+    email: EmailStr
+    organization_name: str
+    phone: str
+    message: str | None = None
+
+
+class DemoRequestResponse(BaseModel):
+    id: int
+    full_name: str
+    email: EmailStr
+    organization_name: str
+    phone: str
+    message: str | None = None
+    created_at: dt.datetime
+
+    model_config = {
+        "from_attributes": True
+    }

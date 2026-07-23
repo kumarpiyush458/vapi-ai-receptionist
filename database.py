@@ -1,14 +1,22 @@
 import os
 import datetime as dt
 
-from sqlalchemy import Boolean, Column, DateTime, Integer, String, create_engine
+from sqlalchemy import (
+    Boolean,
+    Column,
+    DateTime,
+    Integer,
+    String,
+    Text,
+    create_engine,
+)
 from sqlalchemy.orm import declarative_base, sessionmaker, Session
 
 # Use Railway PostgreSQL if available, otherwise use SQLite locally
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://vapi:vapi123@localhost:5432/vapi_db"
-    )
+    "sqlite:///./appointments_db.db"
+)
 
 # Railway uses postgres://, SQLAlchemy expects postgresql://
 if DATABASE_URL.startswith("postgres://"):
@@ -73,6 +81,23 @@ class Patient(Base):
     age = Column(Integer)
 
     phone_number = Column(String, unique=True, nullable=False)
+
+class DemoRequest(Base):
+    __tablename__ = "demo_requests"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    full_name = Column(String, nullable=False)
+
+    email = Column(String, nullable=False)
+
+    organization_name = Column(String, nullable=False)
+
+    phone = Column(String, nullable=False)
+
+    message = Column(Text, nullable=True)
+
+    created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 def init_db():
     print("Creating tables...")

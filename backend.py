@@ -14,6 +14,8 @@ from schemas import (
     RecommendDoctorResponse,
     RescheduleAppointmentRequest,
     RescheduleAppointmentResponse,
+    DemoRequestCreate,
+    DemoRequestResponse,
 )
 
 from utils import (
@@ -31,11 +33,15 @@ from integrations.calendar import (
 )
 from database import init_db, Appointment, Doctor, Patient, get_db
 from sqlalchemy.orm import Session
-# init_db()
+init_db()
 
 from services.appointment_service import (
     schedule_appointment_service,
     cancel_appointment_service,
+)
+
+from services.demo_service import (
+    create_demo_request_service,
 )
 
 
@@ -45,10 +51,22 @@ import datetime as dt
 
 # Step 2: Create FastAPI application and endpoints pseudoo code
 
-from fastapi import FastAPI, HTTPException, Depends
 
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "https://sturdy-dollop-4qqq6q6pr5j6c5g9x-3000.app.github.dev",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Schedule Appointments
 @app.post("/schedule_appointment/")
@@ -211,6 +229,19 @@ def find_patient(phone_number: str, db: Session = Depends(get_db)):
         "age": patient.age,
         "phone_number": patient.phone_number
     }
+
+@app.post(
+    "/demo-request/",
+    response_model=DemoRequestResponse,
+)
+def create_demo_request(
+    request: DemoRequestCreate,
+    db: Session = Depends(get_db),
+):
+    return create_demo_request_service(
+        request,
+        db,
+    )
 
 import uvicorn
 if __name__ == "__main__":
