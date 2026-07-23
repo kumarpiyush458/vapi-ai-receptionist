@@ -39,3 +39,13 @@ def create_demo_request_service(
 
 def get_demo_requests_service(db: Session):
     return db.query(DemoRequest).all()
+
+def get_demo_request_by_id_service(
+    db: Session,
+    demo_request_id: int,
+):
+    return (
+        db.query(DemoRequest)
+        .filter(DemoRequest.id == demo_request_id)
+        .first()
+    )

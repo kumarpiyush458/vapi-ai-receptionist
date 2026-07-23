@@ -43,6 +43,7 @@ from services.appointment_service import (
 from services.demo_service import (
     create_demo_request_service,
     get_demo_requests_service,
+    get_demo_request_by_id_service,
 )
 
 
@@ -254,6 +255,27 @@ def get_demo_requests(
     db: Session = Depends(get_db),
 ):
     return get_demo_requests_service(db)
+
+@app.get(
+    "/demo-requests/{demo_request_id}",
+    response_model=DemoRequestResponse,
+)
+def get_demo_request(
+    demo_request_id: int,
+    db: Session = Depends(get_db),
+):
+    demo_request = get_demo_request_by_id_service(
+        db,
+        demo_request_id,
+    )
+
+    if not demo_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Demo request not found",
+        )
+
+    return demo_request
 
 import uvicorn
 if __name__ == "__main__":
