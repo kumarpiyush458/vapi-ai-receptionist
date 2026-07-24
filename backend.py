@@ -16,6 +16,7 @@ from schemas import (
     RescheduleAppointmentResponse,
     DemoRequestCreate,
     DemoRequestResponse,
+    UpdateLeadStatusRequest,
 )
 
 from utils import (
@@ -44,6 +45,7 @@ from services.demo_service import (
     create_demo_request_service,
     get_demo_requests_service,
     get_demo_request_by_id_service,
+    update_demo_request_status_service,
 )
 
 
@@ -267,6 +269,29 @@ def get_demo_request(
     demo_request = get_demo_request_by_id_service(
         db,
         demo_request_id,
+    )
+
+    if not demo_request:
+        raise HTTPException(
+            status_code=404,
+            detail="Demo request not found",
+        )
+
+    return demo_request
+
+@app.patch(
+    "/demo-requests/{demo_request_id}/status",
+    response_model=DemoRequestResponse,
+)
+def update_demo_request_status(
+    demo_request_id: int,
+    request: UpdateLeadStatusRequest,
+    db: Session = Depends(get_db),
+):
+    demo_request = update_demo_request_status_service(
+        db=db,
+        demo_request_id=demo_request_id,
+        status=request.status,
     )
 
     if not demo_request:

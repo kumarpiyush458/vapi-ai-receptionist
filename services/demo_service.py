@@ -49,3 +49,24 @@ def get_demo_request_by_id_service(
         .filter(DemoRequest.id == demo_request_id)
         .first()
     )
+
+def update_demo_request_status_service(
+    db: Session,
+    demo_request_id: int,
+    status: str,
+):
+    demo_request = (
+        db.query(DemoRequest)
+        .filter(DemoRequest.id == demo_request_id)
+        .first()
+    )
+
+    if not demo_request:
+        return None
+
+    demo_request.status = status
+
+    db.commit()
+    db.refresh(demo_request)
+
+    return demo_request

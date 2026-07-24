@@ -97,6 +97,8 @@ class DemoRequest(Base):
 
     message = Column(Text, nullable=True)
 
+    status = Column(String, default="New")
+
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
 def init_db():

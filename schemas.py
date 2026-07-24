@@ -66,7 +66,11 @@ class DemoRequestResponse(BaseModel):
     organization_name: str
     phone: str
     message: str | None = None
+    status: str
     created_at: dt.datetime
+    
+class UpdateLeadStatusRequest(BaseModel):
+    status: str
 
     model_config = {
         "from_attributes": True
