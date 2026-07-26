@@ -46,6 +46,8 @@ from services.demo_service import (
     get_demo_requests_service,
     get_demo_request_by_id_service,
     update_demo_request_status_service,
+    get_dashboard_stats_service,
+    delete_demo_request_service,
 )
 
 
@@ -235,7 +237,9 @@ def find_patient(phone_number: str, db: Session = Depends(get_db)):
         "age": patient.age,
         "phone_number": patient.phone_number
     }
-
+# -----------------------------
+# Create Demo Request
+# -----------------------------
 @app.post(
     "/demo-request/",
     response_model=DemoRequestResponse,
@@ -245,10 +249,14 @@ def create_demo_request(
     db: Session = Depends(get_db),
 ):
     return create_demo_request_service(
-        request,
-        db,
+        request=request,
+        db=db,
     )
 
+
+# -----------------------------
+# Get All Demo Requests
+# -----------------------------
 @app.get(
     "/demo-requests/",
     response_model=list[DemoRequestResponse],
@@ -258,6 +266,10 @@ def get_demo_requests(
 ):
     return get_demo_requests_service(db)
 
+
+# -----------------------------
+# Get Demo Request By ID
+# -----------------------------
 @app.get(
     "/demo-requests/{demo_request_id}",
     response_model=DemoRequestResponse,
@@ -267,11 +279,11 @@ def get_demo_request(
     db: Session = Depends(get_db),
 ):
     demo_request = get_demo_request_by_id_service(
-        db,
-        demo_request_id,
+        db=db,
+        demo_request_id=demo_request_id,
     )
 
-    if not demo_request:
+    if demo_request is None:
         raise HTTPException(
             status_code=404,
             detail="Demo request not found",
@@ -279,6 +291,10 @@ def get_demo_request(
 
     return demo_request
 
+
+# -----------------------------
+# Update Lead Status
+# -----------------------------
 @app.patch(
     "/demo-requests/{demo_request_id}/status",
     response_model=DemoRequestResponse,
@@ -294,7 +310,7 @@ def update_demo_request_status(
         status=request.status,
     )
 
-    if not demo_request:
+    if demo_request is None:
         raise HTTPException(
             status_code=404,
             detail="Demo request not found",
@@ -302,9 +318,40 @@ def update_demo_request_status(
 
     return demo_request
 
-import uvicorn
-if __name__ == "__main__":
-    uvicorn.run("backend:app", host="127.0.0.1", port=8000, reload=True)
+
+# -----------------------------
+# Delete Lead
+# -----------------------------
+@app.delete("/demo-requests/{demo_request_id}")
+def delete_demo_request(
+    demo_request_id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = delete_demo_request_service(
+        db=db,
+        demo_request_id=demo_request_id,
+    )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="Lead not found",
+        )
+
+    return {
+        "message": "Lead deleted successfully"
+    }
+
+
+# -----------------------------
+# Dashboard Statistics
+# -----------------------------
+@app.get("/dashboard/stats")
+def get_dashboard_stats(
+    db: Session = Depends(get_db),
+):
+    return get_dashboard_stats_service(db)
+
 
 
 # Step 5: StreamLit dashboard testing(just for testing)
