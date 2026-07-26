@@ -101,6 +101,29 @@ class DemoRequest(Base):
 
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
+
+class LeadRemark(Base):
+    __tablename__ = "lead_remarks"
+
+    id = Column(Integer, primary_key=True, index=True)
+
+    demo_request_id = Column(
+        Integer,
+        nullable=False,
+        index=True,
+    )
+
+    remark = Column(
+        Text,
+        nullable=False,
+    )
+
+    created_at = Column(
+        DateTime,
+        default=dt.datetime.utcnow,
+    )
+    
+
 def init_db():
     print("Creating tables...")
     Base.metadata.create_all(bind=engine)

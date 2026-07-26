@@ -17,6 +17,8 @@ from schemas import (
     DemoRequestCreate,
     DemoRequestResponse,
     UpdateLeadStatusRequest,
+    LeadRemarkCreate,
+    LeadRemarkResponse,
 )
 
 from utils import (
@@ -48,6 +50,9 @@ from services.demo_service import (
     update_demo_request_status_service,
     get_dashboard_stats_service,
     delete_demo_request_service,
+    get_lead_remarks_service,
+    add_lead_remark_service,
+    delete_lead_remark_service,
 )
 
 
@@ -342,6 +347,71 @@ def delete_demo_request(
         "message": "Lead deleted successfully"
     }
 
+
+# -----------------------------
+# Get Lead Remarks
+# -----------------------------
+@app.get(
+    "/demo-requests/{demo_request_id}/remarks",
+    response_model=list[LeadRemarkResponse],
+)
+def get_lead_remarks(
+    demo_request_id: int,
+    db: Session = Depends(get_db),
+):
+    return get_lead_remarks_service(
+        db=db,
+        demo_request_id=demo_request_id,
+    )
+
+# -----------------------------
+# Add Lead Remark
+# -----------------------------
+@app.post(
+    "/demo-requests/{demo_request_id}/remarks",
+    response_model=LeadRemarkResponse,
+)
+def add_lead_remark(
+    demo_request_id: int,
+    request: LeadRemarkCreate,
+    db: Session = Depends(get_db),
+):
+    remark = add_lead_remark_service(
+        db=db,
+        demo_request_id=demo_request_id,
+        remark=request.remark,
+    )
+
+    if remark is None:
+        raise HTTPException(
+            status_code=404,
+            detail="Lead not found",
+        )
+
+    return remark
+
+# -----------------------------
+# Delete Lead Remark
+# -----------------------------
+@app.delete("/remarks/{remark_id}")
+def delete_lead_remark(
+    remark_id: int,
+    db: Session = Depends(get_db),
+):
+    deleted = delete_lead_remark_service(
+        db=db,
+        remark_id=remark_id,
+    )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="Remark not found",
+        )
+
+    return {
+        "message": "Remark deleted successfully"
+    }
 
 # -----------------------------
 # Dashboard Statistics

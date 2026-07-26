@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 
-from database import DemoRequest
+from database import DemoRequest, LeadRemark
 from schemas import DemoRequestCreate
 
 
@@ -144,6 +144,77 @@ def delete_demo_request_service(
         return False
 
     db.delete(demo_request)
+    db.commit()
+
+    return True
+
+# -----------------------------
+# Get Lead Remarks
+# -----------------------------
+def get_lead_remarks_service(
+    db: Session,
+    demo_request_id: int,
+):
+    return (
+        db.query(LeadRemark)
+        .filter(
+            LeadRemark.demo_request_id == demo_request_id
+        )
+        .order_by(
+            LeadRemark.created_at.desc()
+        )
+        .all()
+    )
+
+# -----------------------------
+# Add Lead Remark
+# -----------------------------
+def add_lead_remark_service(
+    db: Session,
+    demo_request_id: int,
+    remark: str,
+):
+    lead = (
+        db.query(DemoRequest)
+        .filter(
+            DemoRequest.id == demo_request_id
+        )
+        .first()
+    )
+
+    if not lead:
+        return None
+
+    new_remark = LeadRemark(
+        demo_request_id=demo_request_id,
+        remark=remark,
+    )
+
+    db.add(new_remark)
+    db.commit()
+    db.refresh(new_remark)
+
+    return new_remark
+
+# -----------------------------
+# Delete Lead Remark
+# -----------------------------
+def delete_lead_remark_service(
+    db: Session,
+    remark_id: int,
+):
+    remark = (
+        db.query(LeadRemark)
+        .filter(
+            LeadRemark.id == remark_id
+        )
+        .first()
+    )
+
+    if not remark:
+        return False
+
+    db.delete(remark)
     db.commit()
 
     return True

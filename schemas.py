@@ -71,6 +71,23 @@ class DemoRequestResponse(BaseModel):
     
 class UpdateLeadStatusRequest(BaseModel):
     status: str
+    model_config = {
+        "from_attributes": True
+    }
+
+# -----------------------------
+# Lead Remarks
+# -----------------------------
+
+class LeadRemarkCreate(BaseModel):
+    remark: str
+
+
+class LeadRemarkResponse(BaseModel):
+    id: int
+    demo_request_id: int
+    remark: str
+    created_at: dt.datetime
 
     model_config = {
         "from_attributes": True
