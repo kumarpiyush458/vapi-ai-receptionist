@@ -11,4 +11,8 @@ wheels/
 appointments_db.db
 client_secret.json
 token.json
-.DS_Store
+.DS_Storetoken_old.json
+
+.env
+*.env
+token_old.json
