@@ -24,7 +24,7 @@ def authenticate_google_calendar():
         with open("client_secret.json", "w") as f:
             f.write(os.environ["GOOGLE_CLIENT_SECRET_JSON"])
 
-    if os.getenv("GOOGLE_TOKEN_JSON"):
+    if not os.path.exists("token.json") and os.getenv("GOOGLE_TOKEN_JSON"):
         with open("token.json", "w") as f:
             f.write(os.environ["GOOGLE_TOKEN_JSON"])
             
